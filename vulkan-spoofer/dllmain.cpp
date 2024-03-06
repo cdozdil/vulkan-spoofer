@@ -8,7 +8,6 @@
 #pragma warning (disable : 4996)
 #pragma comment(lib, "detours/detours.lib")
 
-HMODULE vulkan;
 PFN_vkGetPhysicalDeviceProperties pfn_vkGetPhysicalDeviceProperties = nullptr;
 PFN_vkGetPhysicalDeviceProperties2 pfn_vkGetPhysicalDeviceProperties2 = nullptr;
 PFN_vkGetPhysicalDeviceProperties2KHR pfn_vkGetPhysicalDeviceProperties2KHR = nullptr;
@@ -87,24 +86,34 @@ void DetachHooks()
 	DetourTransactionCommit();
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule,
-	DWORD  ul_reason_for_call,
-	LPVOID lpReserved
-)
+void LoadVersion()
+{
+	auto versionHandle = LoadLibrary("version-original.dll");
+
+	if (!versionHandle)
+	{
+		char dllpath[MAX_PATH];
+		GetSystemDirectory(dllpath, MAX_PATH);
+		strcat(dllpath, "\\version.dll");
+		versionHandle = LoadLibrary(dllpath);
+
+		if (versionHandle)
+			version.LoadOriginalLibrary(versionHandle);
+	}
+	else
+		version.LoadOriginalLibrary(versionHandle);
+}
+
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
 	switch (ul_reason_for_call)
 	{
 	case DLL_PROCESS_ATTACH:
-		char dllpath[MAX_PATH];
-		GetSystemDirectory(dllpath, MAX_PATH);
-		strcat(dllpath, "\\version.dll");
-		version.LoadOriginalLibrary(LoadLibrary(dllpath));
+		LoadVersion();
 		AttachHooks();
 		break;
 
 	case DLL_THREAD_ATTACH:
-		break;
-
 	case DLL_THREAD_DETACH:
 		break;
 
@@ -112,6 +121,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		DetachHooks();
 		break;
 	}
+
 	return TRUE;
 }
 
