@@ -11,6 +11,11 @@
 HMODULE vulkan;
 PFN_vkGetPhysicalDeviceProperties pfn_vkGetPhysicalDeviceProperties = nullptr;
 PFN_vkGetPhysicalDeviceProperties2 pfn_vkGetPhysicalDeviceProperties2 = nullptr;
+PFN_vkGetPhysicalDeviceProperties2KHR pfn_vkGetPhysicalDeviceProperties2KHR = nullptr;
+
+bool pfn_vkGetPhysicalDeviceProperties_hooked = false;
+bool pfn_vkGetPhysicalDeviceProperties2_hooked = false;
+bool pfn_vkGetPhysicalDeviceProperties2KHR_hooked = false;
 
 void WINAPI hkGetPhysicalDeviceProperties(VkPhysicalDevice physical_device, VkPhysicalDeviceProperties* properties)
 {
@@ -33,18 +38,15 @@ void WINAPI hkGetPhysicalDeviceProperties2(VkPhysicalDevice phys_dev, VkPhysical
 
 }
 
-//void WINAPI hkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
-//{
-//	pfn_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
-//
-//	std::wstring name(L"NVIDIA GeForce RTX 4090");
-//	const wchar_t* szName = name.c_str();
-//	std::memset(properties2->properties.deviceName, 0, sizeof(properties2->properties.deviceName));
-//	std::memcpy(properties2->properties.deviceName, szName, 54);
-//
-//	properties2->properties.vendorID = 0x10de;
-//	properties2->properties.deviceID = 0x2684;
-//}
+void WINAPI hkGetPhysicalDeviceProperties2KHR(VkPhysicalDevice phys_dev, VkPhysicalDeviceProperties2* properties2)
+{
+	pfn_vkGetPhysicalDeviceProperties2KHR(phys_dev, properties2);
+
+	std::strcpy(properties2->properties.deviceName, "NVIDIA GeForce RTX 4090");
+	properties2->properties.vendorID = 0x10de;
+	properties2->properties.deviceID = 0x2684;
+	properties2->properties.driverVersion = VK_MAKE_API_VERSION(551, 76, 0, 0);
+}
 
 void AttachHooks()
 {
@@ -54,14 +56,18 @@ void AttachHooks()
 	// Detour the functions
 	pfn_vkGetPhysicalDeviceProperties = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties"));
 	pfn_vkGetPhysicalDeviceProperties2 = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2"));
-	//pfn_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2KHR"));
+	pfn_vkGetPhysicalDeviceProperties2KHR = reinterpret_cast<PFN_vkGetPhysicalDeviceProperties2KHR>(DetourFindFunction("vulkan-1.dll", "vkGetPhysicalDeviceProperties2KHR"));
 
-	DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties, hkGetPhysicalDeviceProperties);
-	DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2, hkGetPhysicalDeviceProperties2);
-	//DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2KHR, hkGetPhysicalDeviceProperties2KHR);
+	if (pfn_vkGetPhysicalDeviceProperties)
+		pfn_vkGetPhysicalDeviceProperties_hooked = (DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties, hkGetPhysicalDeviceProperties) == 0);
+
+	if (pfn_vkGetPhysicalDeviceProperties2)
+		pfn_vkGetPhysicalDeviceProperties2_hooked = (DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2, hkGetPhysicalDeviceProperties2) == 0);
+
+	if (pfn_vkGetPhysicalDeviceProperties2KHR)
+		pfn_vkGetPhysicalDeviceProperties2KHR_hooked = (DetourAttach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2KHR, hkGetPhysicalDeviceProperties2KHR) == 0);
 
 	DetourTransactionCommit();
-
 }
 
 void DetachHooks()
@@ -69,9 +75,14 @@ void DetachHooks()
 	DetourTransactionBegin();
 	DetourUpdateThread(GetCurrentThread());
 
-	DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties, hkGetPhysicalDeviceProperties);
-	DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2, hkGetPhysicalDeviceProperties2);
-	//DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2KHR, hkGetPhysicalDeviceProperties2KHR);
+	if (pfn_vkGetPhysicalDeviceProperties_hooked)
+		DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties, hkGetPhysicalDeviceProperties);
+
+	if (pfn_vkGetPhysicalDeviceProperties2_hooked)
+		DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2, hkGetPhysicalDeviceProperties2);
+
+	if (pfn_vkGetPhysicalDeviceProperties2KHR_hooked)
+		DetourDetach(&(PVOID&)pfn_vkGetPhysicalDeviceProperties2KHR, hkGetPhysicalDeviceProperties2KHR);
 
 	DetourTransactionCommit();
 }
@@ -93,7 +104,7 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 
 	case DLL_THREAD_ATTACH:
 		break;
-	
+
 	case DLL_THREAD_DETACH:
 		break;
 
