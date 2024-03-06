@@ -1,7 +1,7 @@
 ## vulkan-spoofer
 It's for by-passing checks for GPU and enable DLSS on Vulkan with AMD/Intel GPUs.
 
-Uses @ThirrteenAG's [Ultimate-ASI-Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)'s version.dll implementation as entry point.
+Uses [ThirrteenAG](https://github.com/ThirteenAG)'s [Ultimate-ASI-Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader)'s version.dll implementation as entry point.
 
 ### Installation
 Just place it next to game executable.
