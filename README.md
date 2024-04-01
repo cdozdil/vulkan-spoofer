@@ -1,7 +1,7 @@
 ## vulkan-spoofer
 It's for by-passing checks for GPU and enable DLSS on Vulkan with AMD/Intel GPUs.
 
-_Not working with Doom Eternal, please use Goghor's enabler on Nexus for this title._
+_Not working with Doom Eternal, please use [Goghor's enabler on Nexus](https://www.nexusmods.com/doometernal/mods/1170) for this title._
 
 Uses [ThirrteenAG](https://github.com/ThirteenAG)'s [Ultimate-ASI-Loader](https://github.com/ThirteenAG/Ultimate-ASI-Loader) version.dll implementation as entry point.
 
